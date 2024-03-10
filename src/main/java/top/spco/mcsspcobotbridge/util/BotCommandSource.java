@@ -15,6 +15,7 @@
  */
 package top.spco.mcsspcobotbridge.util;
 
+import com.google.gson.JsonObject;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
@@ -23,6 +24,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import top.spco.mcsspcobotbridge.bridge.ClientHandler;
+import top.spco.mcsspcobotbridge.bridge.Payload;
 
 import java.util.function.Supplier;
 
@@ -30,26 +33,37 @@ import java.util.function.Supplier;
  * Created on 2024/03/09 19:59
  *
  * @author SpCo
- * @version 1.0
- * @since 1.0
+ * @version 0.1.0
+ * @since 0.1.0
  */
-public class CustomCommandSource extends CommandSourceStack {
+public class BotCommandSource extends CommandSourceStack {
     private static final MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+    private final ClientHandler client;
+    private final Payload request;
 
-    public CustomCommandSource() {
+    public BotCommandSource(ClientHandler client, Payload request) {
         super(CommandSource.NULL, Vec3.ZERO, Vec2.ZERO,
                 server.getLevel(Level.OVERWORLD), 4,
                 "SpCoBot", Component.literal("SpCoBot"), server,
                 null);
+        this.client = client;
+        this.request = request;
+    }
+
+    private void reply(Component component) {
+        JsonObject data = new JsonObject();
+        data.addProperty("result", component.getString());
+        Payload replyPayload = Payload.reply(request, data);
+        client.send(replyPayload);
     }
 
     @Override
-    public void sendSuccess(Supplier<Component> p_288979_, boolean p_289007_) {
-        super.sendSuccess(p_288979_, p_289007_);
+    public void sendSuccess(Supplier<Component> result, boolean p_289007_) {
+        reply(result.get());
     }
 
     @Override
     public void sendFailure(Component p_81353_) {
-        super.sendFailure(p_81353_);
+        reply(p_81353_);
     }
 }
