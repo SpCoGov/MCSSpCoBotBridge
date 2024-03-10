@@ -169,3 +169,6 @@ MSSBB订阅了以下三个事件： 玩家登录、玩家登出和聊天。
 |------|-------------------------------------------------------------------|
 |result|命令执行结束后的输出                                                 |
 |ack   |确认码，值等于请求的同步码，如果请求的同步码省略，则返回消息也不包含确认码|
+
+# 使用Demo
+[SpCoBot](https://github.com/SpCoGov/SpCoBot/blob/master/src/main/java/top/spco/service/mcs/McS.java)
