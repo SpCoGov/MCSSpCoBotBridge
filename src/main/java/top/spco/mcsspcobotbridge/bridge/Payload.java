@@ -69,10 +69,16 @@ import top.spco.mcsspcobotbridge.Config;
  *         <td>Send</td>
  *         <td>Client sends request</td>
  *     </tr>
+ * <tr>
+ *         <td>6</td>
+ *         <td>Heartbeat ACK</td>
+ *         <td>Receive</td>
+ *         <td>When the heartbeat is sent successfully, the message will be received</td>
+ *     </tr>
  * </table>
  *
  * @author SpCo
- * @version 0.1.0
+ * @version 0.1.3
  * @since 0.1.0
  */
 public class Payload {
@@ -140,7 +146,7 @@ public class Payload {
         return new Payload(4, new JsonPrimitive(message), "INVALID_SESSION");
     }
 
-    public static Payload pushEvent(JsonObject data ) {
+    public static Payload pushEvent(JsonObject data) {
         return new Payload(2, data, "DISPATCH");
     }
 
@@ -149,5 +155,12 @@ public class Payload {
             data.addProperty("ack", rd.get("syn").getAsInt());
         }
         return new Payload(2, data, "REPLY");
+    }
+
+    public static Payload heartbeatAck(Payload request, JsonObject data) {
+        if (request.data instanceof JsonObject rd && rd.has("syn")) {
+            data.addProperty("ack", rd.get("syn").getAsInt());
+        }
+        return new Payload(6, data, "HEARTBEAT_ACK");
     }
 }

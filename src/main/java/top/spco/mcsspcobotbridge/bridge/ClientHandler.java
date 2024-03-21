@@ -21,15 +21,18 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.logging.LogUtils;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 import top.spco.mcsspcobotbridge.Config;
-import top.spco.mcsspcobotbridge.util.BotCommandSource;
+import top.spco.mcsspcobotbridge.util.BotCommandSourceStack;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -38,7 +41,7 @@ import java.util.TimerTask;
  * Created on 2024/03/09 16:06
  *
  * @author SpCo
- * @version 0.1.0
+ * @version 0.1.3
  * @since 0.1.0
  */
 public class ClientHandler implements Runnable {
@@ -74,7 +77,10 @@ public class ClientHandler implements Runnable {
                         return;
                     }
                     switch (payload.getOperationCode()) {
-                        case 1 -> this.heartbeatTimer.reset();
+                        case 1 -> {
+                            this.heartbeatTimer.reset();
+                            send(Payload.heartbeatAck(payload, new JsonObject()));
+                        }
                         case 5 -> {
                             if (payload.getData() instanceof JsonObject data) {
                                 switch (data.get("type").getAsString()) {
@@ -82,7 +88,7 @@ public class ClientHandler implements Runnable {
                                         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                                         CommandDispatcher<CommandSourceStack> dispatcher = server.getCommands().getDispatcher();
                                         if (data.has("command")) {
-                                            var bcs= new BotCommandSource(this, payload);
+                                            var bcs = new BotCommandSourceStack(this, payload);
                                             try {
                                                 dispatcher.execute(data.get("command").getAsString(), bcs);
                                             } catch (CommandSyntaxException e) {
@@ -91,20 +97,37 @@ public class ClientHandler implements Runnable {
 
                                         }
                                     }
+                                    case "GROUP_MESSAGE" -> {
+                                        String name = data.get("sender_name").getAsString();
+                                        String message = data.get("message").getAsString();
+                                        MutableComponent component = Component.literal(name).setStyle(Style.EMPTY.withColor(TextColor.parseColor("#545454")));
+                                        component.append(Component.literal(" → ").setStyle(Style.EMPTY.withColor(TextColor.parseColor("#5454fb")).withBold(true)))
+                                                .append(Component.literal(message).setStyle(Style.EMPTY.withColor(TextColor.parseColor("#a8a8a7"))));
+
+                                        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                                        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                                            player.sendSystemMessage(component);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            } catch (SocketException e) {
+                if (Config.debug) {
+                    LOGGER.info("Disconnected from {}: Client actively closes", name);
+                }
+            } catch (Exception e) {
                 if (BridgeServer.getInstance().getClientManager().isRegistered(name)) {
+                    if (Config.debug) {
+                        LOGGER.info("Disconnected from {}: Exception thrown", name);
+                    }
                     LOGGER.info("{}({}) disconnected: {}", name, this.getAddress(), e.getMessage());
                     BridgeServer.getInstance().getClientManager().remove(this.name);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         } finally {
+
             close();
         }
     }
@@ -183,6 +206,9 @@ public class ClientHandler implements Runnable {
 
             @Override
             public void run() {
+                if (Config.debug) {
+                    LOGGER.info("Disconnected from {}: Heartbeat timeout", handler.name);
+                }
                 this.handler.close();
             }
         }

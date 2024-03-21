@@ -26,7 +26,7 @@ import java.util.Set;
  * This class is used to manage all clients of Bridge Server
  *
  * @author SpCo
- * @version 0.1.0
+ * @version 0.1.3
  * @since 0.1.0
  */
 public class ClientManager {
