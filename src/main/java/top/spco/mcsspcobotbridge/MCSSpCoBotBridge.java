@@ -65,7 +65,7 @@ public class MCSSpCoBotBridge {
         JsonObject data = new JsonObject();
         data.addProperty("type", "CHAT");
         data.addProperty("sender_name", event.getPlayer().getName().getString());
-        data.addProperty("message", event.getMessage().getString());
+        data.addProperty("message", event.getMessage());
         this.server.getClientManager().pushToAll(Payload.pushEvent(data));
     }
 }
