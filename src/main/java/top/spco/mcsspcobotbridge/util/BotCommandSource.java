@@ -27,7 +27,7 @@ import java.util.UUID;
  * 用于接收命令的返回值
  *
  * @author SpCo
- * @version 0.1.3
+ * @version 0.1.4
  * @since 0.1.3
  */
 public class BotCommandSource implements CommandSource {

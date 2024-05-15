@@ -31,7 +31,6 @@ import top.spco.mcsspcobotbridge.util.BotCommandSourceStack;
 
 import java.io.*;
 import java.net.Socket;
-import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -40,7 +39,7 @@ import java.util.TimerTask;
  * Created on 2024/03/09 16:06
  *
  * @author SpCo
- * @version 0.1.2
+ * @version 0.1.4
  * @since 0.1.0
  */
 public class ClientHandler implements Runnable {
@@ -85,16 +84,23 @@ public class ClientHandler implements Runnable {
                                 switch (data.get("type").getAsString()) {
                                     case "CALL_COMMAND" -> {
                                         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-                                        CommandDispatcher<CommandSourceStack> dispatcher = server.getCommands().getDispatcher();
-                                        if (data.has("command")) {
-                                            var bcs = new BotCommandSourceStack(this, payload);
-                                            try {
-                                                dispatcher.execute(data.get("command").getAsString(), bcs);
-                                            } catch (CommandSyntaxException e) {
-                                                bcs.sendFailure(new TextComponent(e.getMessage()));
+                                        if (server == null) {
+                                            JsonObject responseData = new JsonObject();
+                                            responseData.addProperty("result", "服务器处于启动阶段，无法执行命令");
+                                            Payload replyPayload = Payload.reply(payload, responseData);
+                                            send(replyPayload);
+                                        } else {
+                                            CommandDispatcher<CommandSourceStack> dispatcher = server.getCommands().getDispatcher();
+                                            if (data.has("command")) {
+                                                var bcs = new BotCommandSourceStack(server,this, payload);
+                                                try {
+                                                    dispatcher.execute(data.get("command").getAsString(), bcs);
+                                                } catch (CommandSyntaxException e) {
+                                                    bcs.sendFailure(new TextComponent(e.getMessage()));
+                                                }
                                             }
-
                                         }
+
                                     }
                                     case "GROUP_MESSAGE" -> {
                                         String name = data.get("sender_name").getAsString();

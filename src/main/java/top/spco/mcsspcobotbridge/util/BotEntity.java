@@ -16,56 +16,60 @@
 package top.spco.mcsspcobotbridge.util;
 
 import com.google.gson.JsonObject;
-import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextComponent;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec2;
-import net.minecraft.world.phys.Vec3;
 import top.spco.mcsspcobotbridge.bridge.ClientHandler;
 import top.spco.mcsspcobotbridge.bridge.Payload;
 
+import java.util.UUID;
+
 /**
- * 用于接收命令的返回值
+ * Created on 2024/03/22 15:35
  *
  * @author SpCo
  * @version 0.1.4
- * @since 0.1.0
+ * @since 0.1.4
  */
-public class BotCommandSourceStack extends CommandSourceStack {
-    private final ClientHandler client;
+public class BotEntity extends Entity {
     private final Payload request;
-
-    public BotCommandSourceStack(MinecraftServer server, ClientHandler client, Payload request) {
-        super(new BotCommandSource(client, request), Vec3.ZERO, Vec2.ZERO,
-                server.getLevel(Level.OVERWORLD), 4,
-                "SpCoBot", new TextComponent("SpCoBot"), server, new BotEntity(server.getLevel(Level.OVERWORLD), request, client)
-        );
-        this.client = client;
+    private final ClientHandler client;
+    public BotEntity(Level p_19871_, Payload request, ClientHandler client) {
+        super(EntityType.PLAYER, p_19871_);
         this.request = request;
+        this.client = client;
+        setCustomName(new TextComponent("SpCoBot"));
     }
 
-    private void reply(Component component) {
+    @Override
+    protected void defineSynchedData() {
+
+    }
+
+    @Override
+    public void sendMessage(Component p_20055_, UUID p_20056_) {
         JsonObject data = new JsonObject();
-        data.addProperty("result", component.getString());
+        data.addProperty("result", p_20055_.getString());
         Payload replyPayload = Payload.reply(request, data);
         client.send(replyPayload);
     }
 
     @Override
-    public MinecraftServer getServer() {
-        return super.getServer();
+    protected void readAdditionalSaveData(CompoundTag p_20052_) {
+
     }
 
     @Override
-    public void sendSuccess(Component p_81355_, boolean p_81356_) {
-        reply(p_81355_);
+    protected void addAdditionalSaveData(CompoundTag p_20139_) {
+
     }
 
-
     @Override
-    public void sendFailure(Component p_81353_) {
-        reply(p_81353_);
+    public Packet<?> getAddEntityPacket() {
+        return null;
     }
 }
